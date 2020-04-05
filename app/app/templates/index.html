@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+{% load static %}
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <!-- <link rel="icon" href="WILL ADD LATER"> -->
+
+    <title>SwasthKhasi</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.0/examples/album/">
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <!-- Bootstrap core JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script defer src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+    <!-- Custom JS -->
+    <script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
+
+    <script defer>
+        $(document).ready(function() {
+            URL = window.URL || window.webkitURL;
+
+            var gumStream;
+            var rec;
+            var input;
+
+            var AudioContext = window.AudioContext || window.webkitAudioContext;
+            var audioContext;
+
+            var recordButton = document.getElementById("recordButton");
+            var stopButton = document.getElementById("stopButton");
+            var pauseButton = document.getElementById("pauseButton");
+
+            recordButton.addEventListener("click", startRecording);
+            stopButton.addEventListener("click", stopRecording);
+            pauseButton.addEventListener("click", pauseRecording);
+
+            function startRecording() {
+                var constraints = {
+                    audio: true,
+                    video: false
+                }
+
+                recordButton.disabled = true;
+                stopButton.disabled = false;
+                pauseButton.disabled = false
+
+                navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+                    audioContext = new AudioContext();
+                    gumStream = stream;
+                    input = audioContext.createMediaStreamSource(stream);
+                    rec = new Recorder(input, {
+                        numChannels: 1
+                    })
+                    rec.record()
+                }).catch(function(err) {
+                    recordButton.disabled = false;
+                    stopButton.disabled = true;
+                    pauseButton.disabled = true
+                });
+            }
+
+            function pauseRecording() {
+                if (rec.recording) {
+                    rec.stop();
+                    pauseButton.innerHTML = "Resume";
+                } else {
+                    rec.record()
+                    pauseButton.innerHTML = "Pause";
+                }
+            }
+
+            function stopRecording() {
+                stopButton.disabled = true;
+                recordButton.disabled = false;
+                pauseButton.disabled = true;
+                pauseButton.innerHTML = "Pause";
+                rec.stop();
+                gumStream.getAudioTracks()[0].stop();
+                rec.exportWAV(createDownloadLink);
+            }
+
+            function createDownloadLink(blob) {
+                var url = URL.createObjectURL(blob);
+                var au = document.createElement('audio');
+                var li = document.createElement('li');
+                var link = document.createElement('a');
+
+                var filename = new Date().toISOString();
+
+                au.controls = true;
+                au.src = url;
+
+                link.href = url;
+                link.download = filename + ".wav";
+                link.innerHTML = "Save to disk";
+
+                li.appendChild(au);
+                li.appendChild(link);
+
+                recordingsList.appendChild(li);
+            }
+
+            // Capture user submission, submit with Ajax instead.
+            $('#user_data_form').submit(function(event) {
+                event.preventDefault();
+                var data = new FormData($(this).get(0));
+
+                $.ajax({
+                    url: $(this).attr('action'),
+                    type: $(this).attr('method'),
+                    data: data,
+                    dataType: 'text',
+                    processData: false,
+                    contentType: false,
+                    cache: false,
+                    success: function(data) {
+                        $('#user_data_form').html('Thank you for your response!');
+                    },
+                });
+            });
+        });
+    </script>
+
+    <!-- Custom styles. -->
+    <style>
+        #recordingsList {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        #recordingsList li {
+            margin-top: 1em;
+        }
+        
+        #recordingsList li a {
+            margin-left: 1em;
+        }
+    </style>
+</head>
+
+<body>
+    <section class="jumbotron text-center">
+        <div class="container">
+            <h1 class="jumbotron-heading">SwasthKhasi</h1>
+            <p class="lead text-muted">Using AI to fight Coronavirus</p>
+            <p>
+                <a href="https://github.com/codekansas/covid-cough-prediction" class="btn btn-primary my-2">Github</a>
+            </p>
+        </div>
+    </section>
+
+    <div class="py-5">
+        <div class="container">
+            <form action="/api/" method="post" id="user_data_form">
+                {% csrf_token %} {{ form.as_p }}
+                <p>
+                    <div id="controls">
+                        <button id="recordButton">Record</button>
+                        <button id="pauseButton" disabled>Pause</button>
+                        <button id="stopButton">Stop</button>
+                    </div>
+                    <ul id="recordingsList"></ul>
+                </p>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>
