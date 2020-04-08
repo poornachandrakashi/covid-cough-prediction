@@ -1,4 +1,4 @@
-# covid-cough-prediction
+# A Webapp for covid-cough-prediction.
 
 The initial design diagram for this project is below.
 
